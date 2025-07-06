@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import base64
 import os
+import time
 
 # Hi-Lo values
 hi_lo_values = {
@@ -31,28 +32,58 @@ def set_background(image_file):
             background-image: url("data:image/png;base64,{encoded}");
             background-size: cover;
         }}
-        .element-container button {{
-            height: 50px !important;
-            font-size: 18px !important;
-        }}
         </style>
     """, unsafe_allow_html=True)
+
+# Card styling and app-wide style overrides
+st.markdown("""
+    <style>
+    h1 { font-size: 28px !important; }
+    h2, h3, h4, .stSubheader { font-size: 18px !important; }
+    .stButton > button {
+        height: 70px;
+        width: 70px;
+        font-size: 20px !important;
+        font-weight: bold;
+        border-radius: 8px;
+        border: 2px solid #000;
+        background-color: white;
+        color: black;
+    }
+    .dealt-card {
+        display: inline-block;
+        margin-right: 6px;
+        padding: 8px 14px;
+        border: 2px solid black;
+        background-color: white;
+        border-radius: 8px;
+        font-weight: bold;
+        font-size: 18px;
+        animation: fadeIn 0.5s ease-in-out;
+    }
+    @keyframes fadeIn {
+        from {{ opacity: 0; transform: translateY(-10px); }}
+        to {{ opacity: 1; transform: translateY(0); }}
+    }
+    </style>
+""", unsafe_allow_html=True)
 
 if os.path.exists("blue_felt.png"):
     set_background("blue_felt.png")
 
 st.title("🃏 Blackjack Hi-Lo Card Counter")
 
-# Select number of decks
+# Deck selection
 num_decks = st.selectbox("Number of decks:", range(1, 9), index=5)
 
-# Session state setup
+# Session setup
 if "card_counts" not in st.session_state or st.session_state.get("num_decks", 0) != num_decks:
     st.session_state.card_counts = {card: num_decks * 4 for card in cards}
     st.session_state.total_cards = num_decks * 52
     st.session_state.count = 0
     st.session_state.history = []
     st.session_state.num_decks = num_decks
+    st.session_state.dealt_cards = []
 
 # Reset functions
 def reset_shoe():
@@ -60,9 +91,11 @@ def reset_shoe():
     st.session_state.total_cards = num_decks * 52
     st.session_state.count = 0
     st.session_state.history = []
+    st.session_state.dealt_cards = []
 
 def reset_hand():
     st.session_state.history = []
+    st.session_state.dealt_cards = []
 
 # Reset buttons
 col1, col2 = st.columns(2)
@@ -73,34 +106,39 @@ with col2:
     if st.button("♻️ Reset Hand"):
         reset_hand()
 
-# Show count and betting suggestion
-st.subheader(f"Running Count: {st.session_state.count}")
+# Running count, true count, betting suggestion
+st.markdown(f"<h4>Running Count: {st.session_state.count}</h4>", unsafe_allow_html=True)
 true_count = round(st.session_state.count / (st.session_state.total_cards / 52), 2) if st.session_state.total_cards else 0
-st.subheader(f"True Count: {true_count}")
-bet_advice = get_betting_suggestion(true_count)
-st.markdown(f"### 💡 Betting Suggestion: **{bet_advice}**")
+st.markdown(f"<h4>True Count: {true_count}</h4>", unsafe_allow_html=True)
+st.markdown(f"<h4>💡 Betting Suggestion: {get_betting_suggestion(true_count)}</h4>", unsafe_allow_html=True)
+
+# Player hand display with "dealer-style animation"
+if st.session_state.dealt_cards:
+    st.markdown("### Player Hand:")
+    hand_html = ''.join([f"<div class='dealt-card'>{card}</div>" for card in st.session_state.dealt_cards])
+    st.markdown(f"<div style='margin-bottom:15px'>{hand_html}</div>", unsafe_allow_html=True)
 
 # Card dealing buttons
-st.markdown("### Deal a Card:")
+st.markdown("<h4>Deal a Card:</h4>", unsafe_allow_html=True)
 card_rows = [cards[:7], cards[7:]]
 for row in card_rows:
     cols = st.columns(len(row))
     for i, card in enumerate(row):
         remaining = st.session_state.card_counts.get(card, 0)
-        if cols[i].button(f"{card} ({remaining})", key=f"{card}_btn"):
+        if cols[i].button(f"{card}\n({remaining})", key=f"{card}_btn"):
             if remaining > 0:
                 st.session_state.card_counts[card] -= 1
                 st.session_state.total_cards -= 1
                 st.session_state.count += hi_lo_values[card]
                 st.session_state.history.append(st.session_state.count)
+                st.session_state.dealt_cards.append(card)
 
 # Count graph
 if st.session_state.history:
     st.markdown("### Count History:")
-    fig, ax = plt.subplots()
+    fig, ax = plt.subplots(figsize=(5, 2))
     ax.plot(st.session_state.history, marker='o')
-    ax.set_xlabel("Cards Dealt This Hand")
+    ax.set_xlabel("Cards Dealt")
     ax.set_ylabel("Running Count")
-    ax.set_title("Running Count Over Time")
+    ax.set_title("")
     st.pyplot(fig)
-
