@@ -43,16 +43,16 @@ if os.path.exists("blue_felt.png"):
 
 st.title("🃏 Blackjack Hi-Lo Card Counter")
 
-# Initialize session state
-if "count" not in st.session_state:
+# Select number of decks
+num_decks = st.selectbox("Number of decks:", range(1, 9), index=5)
+
+# Session state setup
+if "card_counts" not in st.session_state or st.session_state.get("num_decks", 0) != num_decks:
+    st.session_state.card_counts = {card: num_decks * 4 for card in cards}
+    st.session_state.total_cards = num_decks * 52
     st.session_state.count = 0
     st.session_state.history = []
-    st.session_state.card_counts = {}
-    st.session_state.total_cards = 0
-    st.session_state.num_decks = 6  # default
-
-# Select number of decks
-num_decks = st.selectbox("Number of decks:", range(1, 9), index=st.session_state.num_decks - 1)
+    st.session_state.num_decks = num_decks
 
 # Reset functions
 def reset_shoe():
@@ -60,14 +60,11 @@ def reset_shoe():
     st.session_state.total_cards = num_decks * 52
     st.session_state.count = 0
     st.session_state.history = []
-    st.session_state.num_decks = num_decks
 
 def reset_hand():
     st.session_state.history = []
 
-if num_decks != st.session_state.num_decks:
-    reset_shoe()
-
+# Reset buttons
 col1, col2 = st.columns(2)
 with col1:
     if st.button("🔄 Reset Shoe"):
@@ -76,30 +73,28 @@ with col2:
     if st.button("♻️ Reset Hand"):
         reset_hand()
 
-# Running and true count
+# Show count and betting suggestion
 st.subheader(f"Running Count: {st.session_state.count}")
 true_count = round(st.session_state.count / (st.session_state.total_cards / 52), 2) if st.session_state.total_cards else 0
 st.subheader(f"True Count: {true_count}")
-
-# Betting suggestion
 bet_advice = get_betting_suggestion(true_count)
 st.markdown(f"### 💡 Betting Suggestion: **{bet_advice}**")
 
-# Card buttons with counts
+# Card dealing buttons
 st.markdown("### Deal a Card:")
 card_rows = [cards[:7], cards[7:]]
 for row in card_rows:
     cols = st.columns(len(row))
     for i, card in enumerate(row):
         remaining = st.session_state.card_counts.get(card, 0)
-        if cols[i].button(f"{card} ({remaining})"):
+        if cols[i].button(f"{card} ({remaining})", key=f"{card}_btn"):
             if remaining > 0:
                 st.session_state.card_counts[card] -= 1
-                st.session_state.count += hi_lo_values[card]
                 st.session_state.total_cards -= 1
+                st.session_state.count += hi_lo_values[card]
                 st.session_state.history.append(st.session_state.count)
 
-# Count history plot
+# Count graph
 if st.session_state.history:
     st.markdown("### Count History:")
     fig, ax = plt.subplots()
@@ -108,3 +103,4 @@ if st.session_state.history:
     ax.set_ylabel("Running Count")
     ax.set_title("Running Count Over Time")
     st.pyplot(fig)
+
