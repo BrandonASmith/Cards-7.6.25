@@ -17,16 +17,19 @@ st.set_page_config(page_title="JuiceBox", layout="wide")
 
 st.markdown("""
 <style>
-.stApp { background-color: #0b6623; padding: 0.5rem; }
+.stApp { background-color: #0b6623; padding: 0.2rem; }
 div[data-testid="column"] { padding: 0 !important; margin: 0 !important; }
 button[kind="secondary"] {
     height: 26px !important;
     width: 32px !important;
     font-size: 10px !important;
-    padding: 2px !important;
-    margin: 1px !important;
+    padding: 1px !important;
+    margin: 0px !important;
 }
-.stSelectbox label { font-size: 10px !important; margin-bottom: 0px; }
+.stSelectbox label, .stSelectbox div, .stSelectbox button {
+    font-size: 10px !important;
+    margin-bottom: 0px;
+}
 .card-container {
     display: flex; flex-wrap: wrap; gap: 2px; justify-content: center;
 }
@@ -39,12 +42,13 @@ button[kind="secondary"] {
     text-align: center; font-family: Georgia, serif;
     padding: 2px;
 }
+hr { margin: 2px 0; }
 </style>
 """, unsafe_allow_html=True)
 
-# Deck select + buttons in one line
 col1, col2, col3 = st.columns([2, 1, 1])
-num_decks = col1.selectbox("Decks", range(1, 9), index=5, label_visibility="collapsed")
+num_decks = col1.selectbox("", range(1, 9), index=5, label_visibility="collapsed")
+
 if col2.button("🔁", help="Reset Shoe"):
     st.session_state.count = 0
     st.session_state.total_cards = num_decks * 52
@@ -52,6 +56,7 @@ if col2.button("🔁", help="Reset Shoe"):
     st.session_state.dealt = []
     st.session_state.history = []
     st.session_state.num_decks = num_decks
+
 if col3.button("♻", help="Reset Hand"):
     st.session_state.dealt = []
     st.session_state.history = []
@@ -66,9 +71,13 @@ if "count" not in st.session_state or st.session_state.get("num_decks") != num_d
 
 true_count = round(st.session_state.count / (st.session_state.total_cards / 52), 2) if st.session_state.total_cards else 0
 bet = get_bet_advice(true_count)
-st.markdown(f"<small><b>RC:</b> {st.session_state.count} &nbsp; <b>TC:</b> {true_count} &nbsp; <b>{bet}</b></small>", unsafe_allow_html=True)
 
-# 13 card buttons in 2 rows
+# Compact counts display
+st.markdown(
+    f"<small><b>RC:</b> {st.session_state.count} &nbsp; <b>TC:</b> {true_count} &nbsp; <b>{bet}</b></small>",
+    unsafe_allow_html=True)
+
+# 13 buttons across two tight rows
 row1 = cards[:7]
 row2 = cards[7:]
 for row in [row1, row2]:
@@ -83,12 +92,12 @@ for row in [row1, row2]:
                 st.session_state.dealt.append(card)
                 st.session_state.history.append(st.session_state.count)
 
-# Dealt cards
+# Stylized dealt card history
 if st.session_state.dealt:
     html = ''.join([f"<div class='card-history'>♥<br>{card}</div>" for card in st.session_state.dealt])
     st.markdown(f"<div class='card-container'>{html}</div>", unsafe_allow_html=True)
 
-# Mini graph (optional)
+# Running count graph
 if st.session_state.history:
     fig, ax = plt.subplots(figsize=(2.5, 1))
     ax.plot(st.session_state.history, marker='o')
