@@ -7,66 +7,52 @@ cards = list(hi_lo_values.keys())
 
 def get_bet_advice(tc):
     if tc <= 0:
-        return "🧊"
+        return "🧊 Chill"
     elif 0 < tc < 1.8:
-        return "🧃"
+        return "🧃 More Juice"
     else:
-        return "🍊"
+        return "🍊 Fresh Squeezed"
 
 st.set_page_config(page_title="JuiceBox", layout="wide")
 
 st.markdown("""
 <style>
-.stApp { background-color: #0b6623; padding: 0.3rem; }
-.stButton > button {
-    height: 28px !important;
-    width: 30px !important;
-    font-size: 9px !important;
-    font-weight: bold;
-    margin: 0;
-    padding: 0;
+.stApp { background-color: #0b6623; padding: 0.5rem; }
+div[data-testid="column"] { padding: 0 !important; margin: 0 !important; }
+button[kind="secondary"] {
+    height: 26px !important;
+    width: 32px !important;
+    font-size: 10px !important;
+    padding: 2px !important;
+    margin: 1px !important;
 }
+.stSelectbox label { font-size: 10px !important; margin-bottom: 0px; }
 .card-container {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 2px;
-    max-width: 100%;
-    justify-content: center;
+    display: flex; flex-wrap: wrap; gap: 2px; justify-content: center;
 }
 .card-history {
     display: inline-block;
-    width: 28px;
-    height: 40px;
+    width: 28px; height: 38px;
+    font-size: 9px; font-weight: bold;
+    background: white; border: 1px solid black;
+    border-radius: 4px; color: red;
+    text-align: center; font-family: Georgia, serif;
     padding: 2px;
-    margin: 1px;
-    font-size: 9px;
-    font-weight: bold;
-    background: white;
-    border: 1px solid black;
-    border-radius: 4px;
-    color: red;
-    text-align: center;
-    font-family: Georgia, serif;
-}
-h1, h2, h3, .stMarkdown p {
-    font-size: 12px !important;
-    margin: 0;
-    padding: 0;
 }
 </style>
 """, unsafe_allow_html=True)
 
-# Controls
-num_decks = st.selectbox("Decks", range(1, 9), index=5, label_visibility="collapsed")
-col1, col2, col3 = st.columns([1,1,1])
-if col2.button("🔁", help="Shoe"):
+# Deck select + buttons in one line
+col1, col2, col3 = st.columns([2, 1, 1])
+num_decks = col1.selectbox("Decks", range(1, 9), index=5, label_visibility="collapsed")
+if col2.button("🔁", help="Reset Shoe"):
     st.session_state.count = 0
     st.session_state.total_cards = num_decks * 52
     st.session_state.card_counts = {card: num_decks * 4 for card in cards}
     st.session_state.dealt = []
     st.session_state.history = []
     st.session_state.num_decks = num_decks
-if col3.button("♻", help="Hand"):
+if col3.button("♻", help="Reset Hand"):
     st.session_state.dealt = []
     st.session_state.history = []
 
@@ -80,9 +66,9 @@ if "count" not in st.session_state or st.session_state.get("num_decks") != num_d
 
 true_count = round(st.session_state.count / (st.session_state.total_cards / 52), 2) if st.session_state.total_cards else 0
 bet = get_bet_advice(true_count)
-st.markdown(f"<small>RC: {st.session_state.count} | TC: {true_count} | {bet}</small>", unsafe_allow_html=True)
+st.markdown(f"<small><b>RC:</b> {st.session_state.count} &nbsp; <b>TC:</b> {true_count} &nbsp; <b>{bet}</b></small>", unsafe_allow_html=True)
 
-# Two rows of card buttons
+# 13 card buttons in 2 rows
 row1 = cards[:7]
 row2 = cards[7:]
 for row in [row1, row2]:
@@ -102,11 +88,11 @@ if st.session_state.dealt:
     html = ''.join([f"<div class='card-history'>♥<br>{card}</div>" for card in st.session_state.dealt])
     st.markdown(f"<div class='card-container'>{html}</div>", unsafe_allow_html=True)
 
-# Tiny graph (scrollable)
+# Mini graph (optional)
 if st.session_state.history:
     fig, ax = plt.subplots(figsize=(2.5, 1))
     ax.plot(st.session_state.history, marker='o')
-    ax.set_xlabel("Cards", fontsize=7)
-    ax.set_ylabel("RC", fontsize=7)
-    ax.tick_params(axis='both', labelsize=7)
+    ax.set_xlabel("Cards", fontsize=6)
+    ax.set_ylabel("RC", fontsize=6)
+    ax.tick_params(axis='both', labelsize=6)
     st.pyplot(fig)
